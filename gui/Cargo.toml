@@ -47,6 +47,7 @@ open = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libcosmic = { workspace = true, features = ["wayland"] }
+tray-item = { version = "0.10", features = ["libappindicator"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 sysinfo = { workspace = true }

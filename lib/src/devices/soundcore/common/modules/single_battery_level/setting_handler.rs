@@ -36,7 +36,8 @@ where
         let setting: BatteryLevelSetting = (*setting_id).try_into().ok()?;
         Some(match setting {
             BatteryLevelSetting::BatteryLevel => {
-                let text = format!("{}/{}", battery_level.0, self.max_level);
+                let percentage = (battery_level.0 as f32 / self.max_level as f32 * 100.0).round() as u8;
+                let text = format!("{}/{} ({}%)", battery_level.0, self.max_level, percentage);
                 Setting::Information {
                     value: text.clone(),
                     translated_value: text,

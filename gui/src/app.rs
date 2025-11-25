@@ -15,6 +15,7 @@ use crate::{
     add_device::{self, AddDeviceModel},
     device_selection::{self, DeviceSelectionModel},
     device_settings, fl,
+    tray::TrayManager,
     utils::coalesce_result,
 };
 
@@ -27,6 +28,7 @@ pub struct AppModel {
     config_dir: PathBuf,
     about: widget::about::About,
     context_drawer_screen: Option<ContextDrawerScreen>,
+    tray: TrayManager,
 }
 pub struct AppFlags {
     pub config_dir: PathBuf,
@@ -154,6 +156,7 @@ impl Application for AppModel {
             config_dir: flags.config_dir,
             about,
             context_drawer_screen: None,
+            tray: TrayManager::new(),
         };
         let command = app.update_title();
         (
@@ -347,6 +350,7 @@ impl Application for AppModel {
                 }
             }
             Message::ActivateDeviceSelectionScreen => {
+                self.tray.update_device(None);
                 let (model, task) = DeviceSelectionModel::new(self.session.clone());
                 self.screen = Screen::DeviceSelection(model);
                 return task.map(Message::DeviceSelectionScreen).map(Into::into);
@@ -393,6 +397,7 @@ impl Application for AppModel {
                 }
             }
             Message::BackToDeviceSelection => {
+                self.tray.update_device(None);
                 let (model, task) = DeviceSelectionModel::new(self.session.clone());
                 self.screen = Screen::DeviceSelection(model);
                 return task.map(Message::DeviceSelectionScreen).map(Into::into);
@@ -410,6 +415,7 @@ impl Application for AppModel {
                 ]);
             }
             Message::ActivateConnectToDeviceScreen(device) => {
+                self.tray.update_device(Some(&device));
                 let (model, task) = device_settings::DeviceSettingsModel::new(
                     device,
                     self.session.quick_preset_handler(),

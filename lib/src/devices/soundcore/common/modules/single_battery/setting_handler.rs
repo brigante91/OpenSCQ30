@@ -37,9 +37,13 @@ where
                     fl!("not-charging")
                 },
             },
-            BatterySetting::BatteryLevel => Setting::Information {
-                value: battery.level.0.to_string(),
-                translated_value: format!("{}/5", battery.level.0),
+            BatterySetting::BatteryLevel => {
+                let max_level = 5;
+                let percentage = (battery.level.0 as f32 / max_level as f32 * 100.0).round() as u8;
+                Setting::Information {
+                    value: battery.level.0.to_string(),
+                    translated_value: format!("{}/5 ({}%)", battery.level.0, percentage),
+                }
             },
         })
     }

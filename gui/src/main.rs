@@ -10,6 +10,7 @@ mod i18n;
 pub mod icons;
 mod openscq30_v1_migration;
 mod throttle;
+mod tray;
 mod utils;
 
 fn main() -> anyhow::Result<()> {

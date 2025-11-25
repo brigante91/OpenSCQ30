@@ -35,9 +35,12 @@ where
         let battery = state.get();
         let setting: CaseBatteryLevelSetting = (*setting_id).try_into().ok()?;
         Some(match setting {
-            CaseBatteryLevelSetting::CaseBatteryLevel => Setting::Information {
-                value: battery.0.0.to_string(),
-                translated_value: format!("{}/{}", battery.0.0, self.max_level),
+            CaseBatteryLevelSetting::CaseBatteryLevel => {
+                let percentage = (battery.0.0 as f32 / self.max_level as f32 * 100.0).round() as u8;
+                Setting::Information {
+                    value: battery.0.0.to_string(),
+                    translated_value: format!("{}/{} ({}%)", battery.0.0, self.max_level, percentage),
+                }
             },
         })
     }
