@@ -25,12 +25,24 @@ impl TrayManager {
             let device_clone = device.clone();
             
             thread::spawn(move || {
+                // Initialize GTK in this thread (required by tray-item)
+                if let Err(e) = gtk::init() {
+                    tracing::warn!("Failed to initialize GTK for system tray: {e:?}");
+                    return;
+                }
+                
+                tracing::info!("Initializing system tray icon...");
+                
                 // Try to create tray icon
                 // On some systems, this might fail if system tray is not available
-                // Try to use the application icon, fallback to empty if not available
+                // IconSource::Resource requires the icon to be installed in the system
+                // On KDE, the icon name should match the desktop file name
                 let icon = IconSource::Resource("com.oppzippy.OpenSCQ30");
+                tracing::debug!("Attempting to create tray with icon resource: com.oppzippy.OpenSCQ30");
+                
                 let _tray = match TrayItem::new("OpenSCQ30", icon) {
                     Ok(mut tray) => {
+                        tracing::info!("System tray icon created successfully");
                         // Add menu items
                         tray.add_label("OpenSCQ30").ok();
                         tray.add_label("").ok(); // Separator
@@ -87,13 +99,15 @@ impl TrayManager {
                             std::process::exit(0);
                         }).ok();
                         
-                        // Keep tray alive
+                        // Keep tray alive - tray-item handles GTK main loop internally
+                        // We just need to keep the thread alive
                         loop {
                             thread::sleep(std::time::Duration::from_secs(60));
                         }
                     }
                     Err(e) => {
-                        tracing::debug!("System tray not available: {e:?}");
+                        tracing::warn!("Failed to create system tray icon: {e:?}");
+                        tracing::warn!("System tray may not be available or supported on this desktop environment");
                         return;
                     }
                 };

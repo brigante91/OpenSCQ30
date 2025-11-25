@@ -1,5 +1,21 @@
 # Changelog
 
+## v2.0.0-beta7
+
+### GUI
+
+#### Features
+
+- Add system tray support for Linux with quick access to device settings
+  - Toggle noise canceling mode
+  - Cycle ambient sound modes
+  - Quick equalizer preset selection (Normal, Bass, Treble)
+  - Battery level display (when connected)
+
+#### Fixes
+
+- Fix typo in Italian translation: "Dispotivio" → "Dispositivo"
+
 ## v2.0.0-beta6
 
 ### General

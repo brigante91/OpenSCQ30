@@ -1,0 +1,22 @@
+{
+    "KPlugin": {
+        "Id": "com.oppzippy.openscq30.widget",
+        "Name": "OpenSCQ30 Battery Widget",
+        "Description": "Display battery status and quick controls for Soundcore devices",
+        "Version": "2.0.0",
+        "Authors": [
+            {
+                "Name": "OpenSCQ30 Contributors",
+                "Email": "kyle@kylescheuing.com"
+            }
+        ],
+        "License": "GPL-3.0-or-later",
+        "Website": "https://github.com/Oppzippy/OpenSCQ30"
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API": "declarativeappletscript",
+    "X-Plasma-MainScript": "ui/main.qml",
+    "X-Plasma-ContainmentType": "Planar",
+    "X-Plasma-Config": "config/ConfigGeneral.qml"
+}
+
