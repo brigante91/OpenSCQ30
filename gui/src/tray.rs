@@ -201,6 +201,7 @@ impl TrayManager {
         }
     }
     
+    #[allow(dead_code)]
     pub fn shutdown(self) {
         // Tray will be cleaned up when dropped
     }
