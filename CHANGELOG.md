@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+### General
+
+#### Features
+
+- Add initial support for the Soundcore Liberty 5 Pro Max (D1204). Unlike the older "A" series devices, this device encodes its state in a new Tag-Length-Value (TLV) packet format, so a generic TLV parser was added to the shared Soundcore code. The following information is currently decoded and exposed **read-only** (changing settings requires capturing the device's outbound "set" packets, which has not been done yet):
+  - Battery level for both earbuds and the charging case (reported as 0-100%), plus charging status
+  - Left/right firmware versions and serial number
+  - Sound mode (Noise Canceling / Transparency / Normal / Adaptive Noise Canceling) and manual noise canceling level
+  - Touch gesture (button) configuration: single / double / triple / long press for both earbuds, resolved to action names
+  - Equalizer: selected preset and the 8-band custom curve (per-band gain in dB)
+  - Dolby Audio mode (Off / Fixed / Head Tracking)
+  - EasyChat
+- Add an `Easy Chat` setting id (used by the Liberty 5 Pro Max).
+
+### Linux
+
+#### Fixes
+
+- Increase the RFCOMM connection timeout and shorten the retry interval to improve connection reliability for devices that are slow to accept the RFCOMM profile (e.g. Liberty 5 Pro Max).
+
 ## v2.9.0
 
 ### General

@@ -28,6 +28,7 @@ soundcore-a3968 = Soundcore Sport X20
 soundcore-a3954 = Soundcore Liberty 4 Pro
 soundcore-a3955 = Soundcore P40i
 soundcore-a3957 = Soundcore Liberty 5
+soundcore-d1204 = Soundcore Liberty 5 Pro Max
 soundcore-development = Soundcore Development Information
 
 general = General
@@ -198,6 +199,7 @@ wearing-detection = Wearing Detection
 voice-prompt = Voice Prompt
 side-tone = Side Tone
 dolby-audio = Dolby Audio
+easy-chat = Easy Chat
 ldac = LDAC
 
 limit-high-volume = Limit High Volume

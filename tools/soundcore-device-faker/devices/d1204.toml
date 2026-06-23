@@ -1,0 +1,55 @@
+name = "soundcore Liberty 5 Pro Max"
+mac_address = "00:00:00:00:d1:20"
+rfcomm_uuid = "0CF12D31-FAC3-4553-BD80-D6832E7D1204"
+
+[[responses]]
+# State update (Tag-Length-Value layout).
+# Captured from real hardware. Each field is [tag, length, ...value].
+command = [1, 1]
+response = [
+    1, 1, 1,        # tag 1: TWS host device (1 = right is host)
+    2, 1, 1,        # tag 2: TWS connected
+    3, 2, 0, 99,    # tag 3: left battery [is_charging, level%]
+    4, 2, 0, 99,    # tag 4: right battery [is_charging, level%]
+    5, 5, 48, 51, 46, 52, 48,   # tag 5: left firmware "03.40"
+    6, 5, 48, 51, 46, 52, 48,   # tag 6: right firmware "03.40"
+    7, 17, 49, 50, 48, 52, 55, 67, 69, 57, 49, 51, 56, 66, 53, 52, 68, 67, 0, # tag 7: serial "12047CE9138B54DC"
+    8, 2, 128, 77,  # tag 8: unknown (case battery?)
+    9, 5, 48, 49, 46, 51, 56,   # tag 9: case firmware "01.38"
+    10, 1, 49,      # tag 10: unknown
+    11, 2, 2, 0,    # tag 11: unknown
+    12, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, # tag 12: equalizer/hearid (empty)
+    13, 2, 15, 15,  # tag 13: button
+    15, 2, 3, 6,    # tag 15: button
+    17, 2, 15, 15,  # tag 17: button
+    19, 2, 4, 4,    # tag 19: button
+    21, 2, 0, 0,    # tag 21: button
+    23, 2, 1, 1,    # tag 23: button
+    14, 2, 15, 15,  # tag 14: button
+    16, 2, 6, 6,    # tag 16: button
+    18, 2, 15, 15,  # tag 18: button
+    20, 2, 4, 4,    # tag 20: button
+    22, 2, 0, 0,    # tag 22: button
+    24, 2, 1, 1,    # tag 24: button
+    25, 2, 1, 2,    # tag 25: unknown
+    42, 1, 1,       # tag 42: unknown
+    26, 1, 255,     # tag 26: unknown
+    27, 3, 8, 65, 2, # tag 27: sound modes / ANC (unconfirmed)
+    28, 1, 1,       # tag 28: unknown
+    35, 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, # tag 35: blob (hearid/stats)
+    36, 3, 2, 0, 0, # tag 36: unknown
+    37, 2, 5, 1,    # tag 37: unknown
+    38, 2, 0, 0,    # tag 38: unknown
+    39, 3, 0, 90, 0, # tag 39: limit high volume [enabled, db_limit=90, refresh_rate]
+    41, 6, 0, 127, 29, 19, 86, 169, # tag 41: dual connection device mac
+    44, 3, 1, 1, 1, # tag 44: unknown
+    46, 1, 99,      # tag 46: unknown
+    48, 1, 2,       # tag 48: unknown
+    49, 1, 0,       # tag 49: unknown
+    50, 2, 0, 0,    # tag 50: unknown
+    51, 6, 0, 0, 0, 0, 0, 0, # tag 51: unknown
+    52, 1, 0,       # tag 52: unknown
+    53, 1, 0,       # tag 53: unknown
+    54, 2, 1, 1,    # tag 54: unknown
+    68, 1, 0,       # tag 68: unknown
+]

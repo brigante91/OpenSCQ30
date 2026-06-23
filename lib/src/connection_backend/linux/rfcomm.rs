@@ -167,7 +167,7 @@ impl RfcommBackend for BluerRfcommBackend {
             })
             .await?;
 
-        let timeout = Instant::now().checked_add(Duration::from_secs(5)).unwrap();
+        let timeout = Instant::now().checked_add(Duration::from_secs(30)).unwrap();
         debug!("connecting");
         let stream = loop {
             select! {
@@ -178,7 +178,10 @@ impl RfcommBackend for BluerRfcommBackend {
                     if let Err(err)=res{
                         warn!("connect profile failed: {err:?}");
                     }
-                    tokio::time::sleep(Duration::from_secs(3)).await;
+                    // Some devices (e.g. the Liberty 5 Pro Max) are slow/intermittent to
+                    // accept the RFCOMM profile connection. Retry frequently within the
+                    // timeout window rather than giving up after only a couple attempts.
+                    tokio::time::sleep(Duration::from_secs(1)).await;
                 }
                 req = rfcomm_handle.next() => {
                     let req = req.unwrap();
