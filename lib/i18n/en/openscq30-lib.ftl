@@ -200,6 +200,8 @@ voice-prompt = Voice Prompt
 side-tone = Side Tone
 dolby-audio = Dolby Audio
 easy-chat = Easy Chat
+swipe-up = Swipe Up
+swipe-down = Swipe Down
 ldac = LDAC
 
 limit-high-volume = Limit High Volume

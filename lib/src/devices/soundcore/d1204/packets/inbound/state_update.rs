@@ -61,6 +61,10 @@ mod tag {
     pub const BUTTON_RIGHT_TRIPLE: u8 = 18;
     pub const BUTTON_LEFT_LONG: u8 = 19;
     pub const BUTTON_RIGHT_LONG: u8 = 20;
+    pub const SWIPE_LEFT_UP: u8 = 21;
+    pub const SWIPE_RIGHT_UP: u8 = 22;
+    pub const SWIPE_LEFT_DOWN: u8 = 23;
+    pub const SWIPE_RIGHT_DOWN: u8 = 24;
     // Small feature bitfield: [8, flags, dolby_echo]. EasyChat is bit 0x40 of flags.
     pub const SMART_FEATURES: u8 = 27;
     pub const SOUND_MODE: u8 = 36;
@@ -85,12 +89,19 @@ pub struct D1204StateUpdatePacket {
     pub limit_high_volume: LimitHighVolume,
 }
 
+/// Charging is signalled by bit `0x80` of the status byte (observed on the
+/// charging case while externally powered).
+const BATTERY_CHARGING_BIT: u8 = 0x80;
+
 fn parse_single_battery(value: Option<&[u8]>) -> SingleBattery {
-    // Observed layout: [is_charging, level_percent]. Battery is reported as a
-    // percentage (0-100) rather than the 0-10 scale used by older devices.
+    // Layout: [status, level_percent]. Level is a percentage (0-100) rather than
+    // the 0-10 scale used by older devices. The status byte's 0x80 bit indicates
+    // charging.
     let bytes = value.unwrap_or(&[0, 0]);
     SingleBattery {
-        is_charging: IsBatteryCharging::from(bytes.first().copied().unwrap_or(0) == 1),
+        is_charging: IsBatteryCharging::from(
+            bytes.first().copied().unwrap_or(0) & BATTERY_CHARGING_BIT != 0,
+        ),
         level: BatteryLevel(bytes.get(1).copied().unwrap_or(0)),
     }
 }
@@ -157,18 +168,24 @@ impl FromPacketBody for D1204StateUpdatePacket {
                 right_triple: button(tag::BUTTON_RIGHT_TRIPLE),
                 left_long: button(tag::BUTTON_LEFT_LONG),
                 right_long: button(tag::BUTTON_RIGHT_LONG),
+                left_swipe_up: button(tag::SWIPE_LEFT_UP),
+                right_swipe_up: button(tag::SWIPE_RIGHT_UP),
+                left_swipe_down: button(tag::SWIPE_LEFT_DOWN),
+                right_swipe_down: button(tag::SWIPE_RIGHT_DOWN),
             };
 
             let dolby_audio = DolbyAudio::from_bytes(get(tag::DOLBY_AUDIO).unwrap_or(&[]));
             let easy_chat = EasyChat::from_bytes(get(tag::SMART_FEATURES).unwrap_or(&[]));
 
-            let dual_firmware_version =
-                match (parse_firmware(get(tag::FIRMWARE_LEFT)), parse_firmware(get(tag::FIRMWARE_RIGHT))) {
-                    (Some(left), Some(right)) => DualFirmwareVersion::Both { left, right },
-                    (Some(left), None) => DualFirmwareVersion::LeftOnly(left),
-                    (None, Some(right)) => DualFirmwareVersion::RightOnly(right),
-                    (None, None) => DualFirmwareVersion::default(),
-                };
+            let dual_firmware_version = match (
+                parse_firmware(get(tag::FIRMWARE_LEFT)),
+                parse_firmware(get(tag::FIRMWARE_RIGHT)),
+            ) {
+                (Some(left), Some(right)) => DualFirmwareVersion::Both { left, right },
+                (Some(left), None) => DualFirmwareVersion::LeftOnly(left),
+                (None, Some(right)) => DualFirmwareVersion::RightOnly(right),
+                (None, None) => DualFirmwareVersion::default(),
+            };
 
             let serial_number = get(tag::SERIAL_NUMBER)
                 .and_then(|b| b.get(..16))
@@ -232,22 +249,26 @@ impl ToPacket for D1204StateUpdatePacket {
     }
 
     fn body(&self) -> Vec<u8> {
-        let firmware_bytes = |version: Option<FirmwareVersion>| {
-            version.map(|v| v.bytes()).unwrap_or([0; 5])
-        };
+        let firmware_bytes =
+            |version: Option<FirmwareVersion>| version.map(|v| v.bytes()).unwrap_or([0; 5]);
+        let battery_status =
+            |is_charging: IsBatteryCharging| (is_charging as u8) * BATTERY_CHARGING_BIT;
         tlv(tag::TWS_HOST_DEVICE, &[self.tws_status.host_device as u8])
-            .chain(tlv(tag::TWS_CONNECTED, &[self.tws_status.is_connected as u8]))
+            .chain(tlv(
+                tag::TWS_CONNECTED,
+                &[self.tws_status.is_connected as u8],
+            ))
             .chain(tlv(
                 tag::BATTERY_LEFT,
                 &[
-                    self.dual_battery.left.is_charging as u8,
+                    battery_status(self.dual_battery.left.is_charging),
                     self.dual_battery.left.level.0,
                 ],
             ))
             .chain(tlv(
                 tag::BATTERY_RIGHT,
                 &[
-                    self.dual_battery.right.is_charging as u8,
+                    battery_status(self.dual_battery.right.is_charging),
                     self.dual_battery.right.level.0,
                 ],
             ))
@@ -264,32 +285,64 @@ impl ToPacket for D1204StateUpdatePacket {
                 tag::SERIAL_NUMBER,
                 self.serial_number.as_str().as_bytes(),
             ))
-            .chain(tlv(tag::EQUALIZER_PRESET, &self.equalizer.preset_id_bytes()))
+            .chain(tlv(
+                tag::EQUALIZER_PRESET,
+                &self.equalizer.preset_id_bytes(),
+            ))
             .chain(tlv(tag::EQUALIZER_CURVE, &self.equalizer.curve_bytes()))
-            .chain(tlv(tag::BUTTON_LEFT_SINGLE, &self.buttons.left_single.bytes()))
+            .chain(tlv(
+                tag::BUTTON_LEFT_SINGLE,
+                &self.buttons.left_single.bytes(),
+            ))
             .chain(tlv(
                 tag::BUTTON_RIGHT_SINGLE,
                 &self.buttons.right_single.bytes(),
             ))
-            .chain(tlv(tag::BUTTON_LEFT_DOUBLE, &self.buttons.left_double.bytes()))
+            .chain(tlv(
+                tag::BUTTON_LEFT_DOUBLE,
+                &self.buttons.left_double.bytes(),
+            ))
             .chain(tlv(
                 tag::BUTTON_RIGHT_DOUBLE,
                 &self.buttons.right_double.bytes(),
             ))
-            .chain(tlv(tag::BUTTON_LEFT_TRIPLE, &self.buttons.left_triple.bytes()))
+            .chain(tlv(
+                tag::BUTTON_LEFT_TRIPLE,
+                &self.buttons.left_triple.bytes(),
+            ))
             .chain(tlv(
                 tag::BUTTON_RIGHT_TRIPLE,
                 &self.buttons.right_triple.bytes(),
             ))
             .chain(tlv(tag::BUTTON_LEFT_LONG, &self.buttons.left_long.bytes()))
-            .chain(tlv(tag::BUTTON_RIGHT_LONG, &self.buttons.right_long.bytes()))
+            .chain(tlv(
+                tag::BUTTON_RIGHT_LONG,
+                &self.buttons.right_long.bytes(),
+            ))
+            .chain(tlv(tag::SWIPE_LEFT_UP, &self.buttons.left_swipe_up.bytes()))
+            .chain(tlv(
+                tag::SWIPE_RIGHT_UP,
+                &self.buttons.right_swipe_up.bytes(),
+            ))
+            .chain(tlv(
+                tag::SWIPE_LEFT_DOWN,
+                &self.buttons.left_swipe_down.bytes(),
+            ))
+            .chain(tlv(
+                tag::SWIPE_RIGHT_DOWN,
+                &self.buttons.right_swipe_down.bytes(),
+            ))
             .chain(tlv(tag::DOLBY_AUDIO, &self.dolby_audio.bytes()))
             .chain(tlv(
                 tag::SMART_FEATURES,
                 &[
                     8,
                     0x01 | if self.easy_chat.0 { 0x40 } else { 0 },
-                    if self.dolby_audio == DolbyAudio::Off { 0 } else { 2 },
+                    if self.dolby_audio == DolbyAudio::Off {
+                        0
+                    } else {
+                        2
+                    },
                 ],
             ))
             .chain(tlv(tag::SOUND_MODE, &[self.sound_mode as u8, 0, 0]))
@@ -342,18 +395,18 @@ mod tests {
 
     /// Real Liberty 5 Pro Max (D1204) state update packet body captured from hardware.
     const REAL_PACKET_BODY: &[u8] = &[
-        1, 1, 1, 2, 1, 1, 3, 2, 0, 99, 4, 2, 0, 99, 5, 5, 48, 51, 46, 52, 48, 6, 5, 48, 51, 46,
-        52, 48, 7, 17, 49, 50, 48, 52, 55, 67, 69, 57, 49, 51, 56, 66, 53, 52, 68, 67, 0, 8, 2,
-        128, 77, 9, 5, 48, 49, 46, 51, 56, 10, 1, 49, 11, 2, 2, 0, 12, 32, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 2, 15, 15,
-        15, 2, 3, 6, 17, 2, 15, 15, 19, 2, 4, 4, 21, 2, 0, 0, 23, 2, 1, 1, 14, 2, 15, 15, 16, 2,
-        6, 6, 18, 2, 15, 15, 20, 2, 4, 4, 22, 2, 0, 0, 24, 2, 1, 1, 25, 2, 1, 2, 42, 1, 1, 26, 1,
-        255, 27, 3, 8, 65, 2, 28, 1, 1, 35, 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 1, 1, 2, 1, 1, 3, 2, 0, 99, 4, 2, 0, 99, 5, 5, 48, 51, 46, 52, 48, 6, 5, 48, 51, 46, 52,
+        48, 7, 17, 49, 50, 48, 52, 55, 67, 69, 57, 49, 51, 56, 66, 53, 52, 68, 67, 0, 8, 2, 128,
+        77, 9, 5, 48, 49, 46, 51, 56, 10, 1, 49, 11, 2, 2, 0, 12, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 2, 15, 15, 15, 2, 3,
+        6, 17, 2, 15, 15, 19, 2, 4, 4, 21, 2, 0, 0, 23, 2, 1, 1, 14, 2, 15, 15, 16, 2, 6, 6, 18, 2,
+        15, 15, 20, 2, 4, 4, 22, 2, 0, 0, 24, 2, 1, 1, 25, 2, 1, 2, 42, 1, 1, 26, 1, 255, 27, 3, 8,
+        65, 2, 28, 1, 1, 35, 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 3, 2, 0, 0, 37, 2, 5, 1, 38, 2, 0,
-        0, 39, 3, 0, 90, 0, 41, 6, 0, 127, 29, 19, 86, 169, 44, 3, 1, 1, 1, 46, 1, 99, 48, 1, 2,
-        49, 1, 0, 50, 2, 0, 0, 51, 6, 0, 0, 0, 0, 0, 0, 52, 1, 0, 53, 1, 0, 54, 2, 1, 1, 68, 1, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 3, 2, 0, 0, 37, 2, 5, 1, 38, 2, 0, 0, 39, 3, 0, 90,
+        0, 41, 6, 0, 127, 29, 19, 86, 169, 44, 3, 1, 1, 1, 46, 1, 99, 48, 1, 2, 49, 1, 0, 50, 2, 0,
+        0, 51, 6, 0, 0, 0, 0, 0, 0, 52, 1, 0, 53, 1, 0, 54, 2, 1, 1, 68, 1, 0,
     ];
 
     #[test]
@@ -379,6 +432,9 @@ mod tests {
         assert_eq!(packet.buttons.left_long.name(), Some("AmbientSoundMode"));
         // tag 13 = [15, 15] -> disabled gesture.
         assert_eq!(packet.buttons.left_single.name(), None);
+        // tag 21/23 = swipe up/down -> VolumeUp / VolumeDown.
+        assert_eq!(packet.buttons.left_swipe_up.name(), Some("VolumeUp"));
+        assert_eq!(packet.buttons.left_swipe_down.name(), Some("VolumeDown"));
         // tag 44 = [1, 1, 1] -> Dolby Audio, Fixed mode.
         assert_eq!(packet.dolby_audio, DolbyAudio::Fixed);
         // tag 27 = [8, 65, 2] -> EasyChat on (bit 0x40).
@@ -400,8 +456,7 @@ mod tests {
         let (_, packet) =
             D1204StateUpdatePacket::take::<VerboseError<&[u8]>>(REAL_PACKET_BODY).unwrap();
         let body = packet.body();
-        let (_, reparsed) =
-            D1204StateUpdatePacket::take::<VerboseError<&[u8]>>(&body).unwrap();
+        let (_, reparsed) = D1204StateUpdatePacket::take::<VerboseError<&[u8]>>(&body).unwrap();
         assert_eq!(packet, reparsed);
     }
 }

@@ -74,7 +74,8 @@ fn action_name(id: u8) -> Option<&'static str> {
 /// - tag 17 / 18: triple press, left / right
 /// - tag 19 / 20: long press, left / right
 ///
-/// Tags 21-24 (volume swipe gestures) are not yet exposed.
+/// - tag 21 / 22: swipe up, left / right (default VolumeUp)
+/// - tag 23 / 24: swipe down, left / right (default VolumeDown)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct D1204Buttons {
     pub left_single: D1204ButtonAction,
@@ -85,4 +86,8 @@ pub struct D1204Buttons {
     pub right_triple: D1204ButtonAction,
     pub left_long: D1204ButtonAction,
     pub right_long: D1204ButtonAction,
+    pub left_swipe_up: D1204ButtonAction,
+    pub right_swipe_up: D1204ButtonAction,
+    pub left_swipe_down: D1204ButtonAction,
+    pub right_swipe_down: D1204ButtonAction,
 }

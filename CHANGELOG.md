@@ -11,10 +11,15 @@
   - Left/right firmware versions and serial number
   - Sound mode (Noise Canceling / Transparency / Normal / Adaptive Noise Canceling) and manual noise canceling level
   - Touch gesture (button) configuration: single / double / triple / long press for both earbuds, resolved to action names
+  - Swipe gestures (swipe up / swipe down), resolved to action names
   - Equalizer: selected preset and the 8-band custom curve (per-band gain in dB)
   - Dolby Audio mode (Off / Fixed / Head Tracking)
   - EasyChat
-- Add an `Easy Chat` setting id (used by the Liberty 5 Pro Max).
+- Add `Easy Chat`, `Swipe Up`, and `Swipe Down` setting ids (used by the Liberty 5 Pro Max).
+
+#### CLI
+
+- Add `openscq30 device watch` to continuously print setting values over a single persistent connection, reprinting whenever the device reports a change. Useful for observing live changes without reconnecting on every read
 
 ### Linux
 

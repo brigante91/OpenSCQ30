@@ -29,6 +29,9 @@ pub async fn handle(matches: &ArgMatches) -> anyhow::Result<()> {
         ("setting", matches) => {
             handle_setting(matches, device.as_ref()).await?;
         }
+        ("watch", matches) => {
+            handle_watch(matches, device.as_ref()).await?;
+        }
         _ => unreachable!(),
     }
     Ok(())
@@ -218,6 +221,68 @@ async fn handle_setting(matches: &ArgMatches, device: &dyn OpenSCQ30Device) -> a
     }
 
     result
+}
+
+async fn handle_watch(matches: &ArgMatches, device: &dyn OpenSCQ30Device) -> anyhow::Result<()> {
+    let json = matches.get_flag("json");
+    let setting_ids = matches
+        .get_many::<String>("get")
+        .unwrap_or_default()
+        .map(|setting_id| setting_id_from_str(setting_id))
+        .collect::<anyhow::Result<Vec<_>>>()?;
+
+    let mut changes = device.watch_for_changes();
+    let start = std::time::Instant::now();
+    loop {
+        print_watch_snapshot(device, &setting_ids, json, start.elapsed());
+        // Resolves when the device reports a change. Errors only when the device is
+        // dropped (connection closed), in which case we stop watching.
+        if changes.changed().await.is_err() {
+            break;
+        }
+    }
+    Ok(())
+}
+
+fn print_watch_snapshot(
+    device: &dyn OpenSCQ30Device,
+    setting_ids: &[SettingId],
+    json: bool,
+    elapsed: std::time::Duration,
+) {
+    let ids: Vec<SettingId> = if setting_ids.is_empty() {
+        device
+            .categories()
+            .into_iter()
+            .flat_map(|category_id| device.settings_in_category(&category_id))
+            .collect()
+    } else {
+        setting_ids.to_vec()
+    };
+
+    let items = ids
+        .into_iter()
+        .filter_map(|setting_id| {
+            device.setting(&setting_id).map(|setting| SettingIdValue {
+                setting_id,
+                value: setting.into(),
+            })
+        })
+        .collect::<Vec<_>>();
+
+    if json {
+        match serde_json::to_string(&items) {
+            Ok(serialized) => println!("{serialized}"),
+            Err(error) => eprintln!("failed to serialize settings: {error}"),
+        }
+    } else {
+        println!("--- [+{:.1}s] ---", elapsed.as_secs_f64());
+        if !items.is_empty() {
+            let mut table = Table::new(items.into_iter().map(SettingIdValueTableItem::from));
+            crate::fmt::apply_tabled_settings(&mut table);
+            println!("{table}");
+        }
+    }
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]

@@ -201,6 +201,20 @@ Equalizers: All bands must be specified, and numbers should be separated with ',
                         )
                         .arg(json_arg.clone()),
                 )
+                .subcommand(
+                    Command::new("watch")
+                        .about("Continuously print setting values as they change, over a single persistent connection")
+                        .after_help(
+"Keeps one connection open and reprints the requested setting(s) every time the device reports a change. This avoids reconnecting on every read and is useful for observing live changes (e.g. while reassigning button gestures in the official app).
+
+Use `--get` (repeatable) to watch specific settings. If no `--get` is provided, all currently available settings are printed on every change. The first output is the current state; subsequent outputs are triggered by device changes. Press Ctrl-C to stop."
+                        )
+                        .arg(
+                            arg!(-g --get <SETTING_ID> "Limits output to the given setting(s)")
+                                .action(ArgAction::Append),
+                        )
+                        .arg(json_arg.clone()),
+                )
         )
         .subcommand(
             Command::new("list-models")

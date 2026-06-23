@@ -29,6 +29,8 @@ impl ButtonsSettingHandler {
             SettingId::RightTriplePress => buttons.right_triple,
             SettingId::LeftLongPress => buttons.left_long,
             SettingId::RightLongPress => buttons.right_long,
+            SettingId::SwipeUp => buttons.left_swipe_up,
+            SettingId::SwipeDown => buttons.left_swipe_down,
             _ => return None,
         })
     }
@@ -49,6 +51,8 @@ where
             SettingId::RightTriplePress,
             SettingId::LeftLongPress,
             SettingId::RightLongPress,
+            SettingId::SwipeUp,
+            SettingId::SwipeDown,
         ]
     }
 
@@ -57,7 +61,9 @@ where
         let action = Self::action_for(buttons, setting_id)?;
         Some(Setting::Information {
             value: action.name().unwrap_or("Disabled").to_string(),
-            translated_value: action.localized_name().unwrap_or_else(|| "Disabled".to_string()),
+            translated_value: action
+                .localized_name()
+                .unwrap_or_else(|| "Disabled".to_string()),
         })
     }
 
