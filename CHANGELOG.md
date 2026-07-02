@@ -17,6 +17,10 @@
   - EasyChat
 - Add `Easy Chat`, `Swipe Up`, and `Swipe Down` setting ids (used by the Liberty 5 Pro Max).
 
+#### Fixes
+
+- Fix change notifications never firing on fully read-only devices (such as the Liberty 5 Pro Max). The device now keeps the change-notification channel open for its whole lifetime, so `watch_for_changes` reflects live state updates instead of immediately observing a closed channel.
+
 #### CLI
 
 - Add `openscq30 device watch` to continuously print setting values over a single persistent connection, reprinting whenever the device reports a change. Useful for observing live changes without reconnecting on every read

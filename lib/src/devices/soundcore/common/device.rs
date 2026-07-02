@@ -242,7 +242,7 @@ where
             self.module_collection,
             self.packet_receiver,
             self.device_model,
-            self.change_notify.subscribe(),
+            self.change_notify,
         )
         .await
     }
@@ -692,7 +692,11 @@ where
     packet_io_controller: Arc<PacketIOController>,
     // TODO exit signal is necessary due to the PacketIOController Arc spaghetti.
     exit_signal: Arc<Semaphore>,
-    change_notify: watch::Receiver<()>,
+    // Held as the sender (rather than a receiver) so that the change notification channel
+    // stays open for the lifetime of the device. On fully read-only devices no module
+    // retains a sender clone, so keeping it here prevents `watch_for_changes` from
+    // immediately observing a closed channel.
+    change_notify: watch::Sender<()>,
 }
 
 impl<StateType> SoundcoreDeviceTemplate<StateType>
@@ -705,7 +709,7 @@ where
         module_collection: ModuleCollection<StateType>,
         packet_receiver: mpsc::Receiver<packet::Inbound>,
         device_model: DeviceModel,
-        change_notify: watch::Receiver<()>,
+        change_notify: watch::Sender<()>,
     ) -> Self {
         let exit_signal = Arc::new(Semaphore::new(0));
         let module_collection = Arc::new(module_collection);
@@ -764,7 +768,7 @@ where
     fn watch_for_changes(&self) -> watch::Receiver<()> {
         let mut receiver = self.state_sender.subscribe();
         let (change_sender, change_receiver) = watch::channel(());
-        let mut change_notify = self.change_notify.clone();
+        let mut change_notify = self.change_notify.subscribe();
         // receiver will close when self is dropped, so this will clean itself up
         tokio::spawn(async move {
             loop {
